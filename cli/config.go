@@ -31,7 +31,7 @@ const (
 	defaultHypervisor = vc.QemuHypervisor
 	defaultProxy      = vc.KataProxyType
 	defaultShim       = vc.KataShimType
-	defaultAgent      = vc.HyperstartAgent
+	defaultAgent      = vc.KataContainersAgent
 )
 
 // The TOML configuration file contains a number of sections (or
