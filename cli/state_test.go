@@ -34,13 +34,13 @@ func TestStateCliAction(t *testing.T) {
 	flagSet := flag.NewFlagSet("flag", flag.ContinueOnError)
 
 	// without container id
-	flagSet.Parse([]string{"cc-runtime"})
+	flagSet.Parse([]string{"runtime"})
 	ctx := cli.NewContext(&cli.App{}, flagSet, nil)
 	err := actionFunc(ctx)
 	assert.Error(err)
 
 	// with container id
-	flagSet.Parse([]string{"cc-runtime", testContainerID})
+	flagSet.Parse([]string{"runtime", testContainerID})
 	ctx = cli.NewContext(&cli.App{}, flagSet, nil)
 	err = actionFunc(ctx)
 	assert.Error(err)
