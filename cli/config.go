@@ -451,7 +451,7 @@ func loadConfiguration(configPath string, ignoreLogging bool) (resolvedConfigPat
 	} else {
 		// If debug is not required, switch back to the original
 		// default log priority, otherwise continue in debug mode.
-		ccLog.Logger.Level = originalLoggerLevel
+		kataLog.Logger.Level = originalLoggerLevel
 	}
 
 	if tomlConf.Runtime.InterNetworkModel != "" {
@@ -467,7 +467,7 @@ func loadConfiguration(configPath string, ignoreLogging bool) (resolvedConfigPat
 			return "", config, err
 		}
 
-		ccLog.WithFields(
+		kataLog.WithFields(
 			logrus.Fields{
 				"format": "TOML",
 			}).Debugf("loaded configuration")

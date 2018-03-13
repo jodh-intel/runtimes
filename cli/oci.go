@@ -238,11 +238,11 @@ func processCgroupsPathForResource(ociSpec oci.CompatOCISpec, resource string, i
 	}
 
 	if !isCgroupMounted(cgroupPath) {
-		ccLog.WithFields(fields).Info("path not mounted")
+		kataLog.WithFields(fields).Info("path not mounted")
 		return "", nil
 	}
 
-	ccLog.WithFields(fields).Info("path mounted")
+	kataLog.WithFields(fields).Info("path mounted")
 
 	return filepath.Join(cgroupPath, ociSpec.Linux.CgroupsPath), nil
 }

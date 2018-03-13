@@ -31,7 +31,7 @@ func handlePanic() {
 
 	if r != nil {
 		msg := fmt.Sprintf("%s", r)
-		ccLog.WithField("panic", msg).Error("fatal error")
+		kataLog.WithField("panic", msg).Error("fatal error")
 
 		die()
 	}
@@ -49,7 +49,7 @@ func backtrace() {
 	}
 
 	for _, line := range strings.Split(buf.String(), "\n") {
-		ccLog.Error(line)
+		kataLog.Error(line)
 	}
 }
 

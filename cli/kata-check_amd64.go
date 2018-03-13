@@ -83,7 +83,7 @@ func kvmIsUsable() error {
 	}
 	defer syscall.Close(f)
 
-	fieldLogger := ccLog.WithField("check-type", "full")
+	fieldLogger := kataLog.WithField("check-type", "full")
 
 	fieldLogger.WithField("device", kvmDevice).Info("device available")
 
@@ -118,12 +118,12 @@ func archKernelParamHandler(onVMM bool, fields logrus.Fields, msg string) bool {
 	// This option is not required when
 	// already running under a hypervisor.
 	if param == "unrestricted_guest" && onVMM {
-		ccLog.WithFields(fields).Warn(kernelPropertyCorrect)
+		kataLog.WithFields(fields).Warn(kernelPropertyCorrect)
 		return true
 	}
 
 	if param == "nested" {
-		ccLog.WithFields(fields).Warn(msg)
+		kataLog.WithFields(fields).Warn(msg)
 		return true
 	}
 

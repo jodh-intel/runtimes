@@ -659,18 +659,18 @@ func TestMainBeforeSubCommandsInvalidLogFormat(t *testing.T) {
 	set.String("log-format", "captain-barnacles", "")
 	set.Parse([]string{"create"})
 
-	logOut := ccLog.Logger.Out
-	ccLog.Logger.Out = nil
+	logOut := kataLog.Logger.Out
+	kataLog.Logger.Out = nil
 
 	defer func() {
-		ccLog.Logger.Out = logOut
+		kataLog.Logger.Out = logOut
 	}()
 
 	ctx := cli.NewContext(app, set, nil)
 
 	err = beforeSubcommands(ctx)
 	assert.Error(err)
-	assert.NotNil(ccLog.Logger.Out)
+	assert.NotNil(kataLog.Logger.Out)
 }
 
 func TestMainBeforeSubCommandsLoadConfigurationFail(t *testing.T) {
@@ -1040,7 +1040,7 @@ func TestMainFatalWriter(t *testing.T) {
 	buf := &bytes.Buffer{}
 
 	savedBefore := runtimeBeforeSubcommands
-	savedLogOutput := ccLog.Logger.Out
+	savedLogOutput := kataLog.Logger.Out
 	savedCLIExiter := cli.OsExiter
 	savedCommands := runtimeCommands
 
@@ -1048,7 +1048,7 @@ func TestMainFatalWriter(t *testing.T) {
 	runtimeBeforeSubcommands = nil
 
 	// save all output
-	ccLog.Logger.Out = buf
+	kataLog.Logger.Out = buf
 
 	cli.OsExiter = func(status int) {}
 
@@ -1064,7 +1064,7 @@ func TestMainFatalWriter(t *testing.T) {
 
 	defer func() {
 		runtimeBeforeSubcommands = savedBefore
-		ccLog.Logger.Out = savedLogOutput
+		kataLog.Logger.Out = savedLogOutput
 		cli.OsExiter = savedCLIExiter
 		runtimeCommands = savedCommands
 	}()

@@ -141,7 +141,7 @@ func deleteContainer(podID, containerID string, forceStop bool) error {
 
 func removeCgroupsPath(containerID string, cgroupsPathList []string) error {
 	if len(cgroupsPathList) == 0 {
-		ccLog.WithField("container", containerID).Info("Cgroups files not removed because cgroupsPath was empty")
+		kataLog.WithField("container", containerID).Info("Cgroups files not removed because cgroupsPath was empty")
 		return nil
 	}
 
