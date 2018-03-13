@@ -198,7 +198,7 @@ func getHostInfo() (HostInfo, error) {
 		Model:  cpuModel,
 	}
 
-	ccHost := HostInfo{
+	host := HostInfo{
 		Kernel:             hostKernelVersion,
 		Architecture:       arch,
 		Distro:             hostDistro,
@@ -206,7 +206,7 @@ func getHostInfo() (HostInfo, error) {
 		VMContainerCapable: hostVMContainerCapable,
 	}
 
-	return ccHost, nil
+	return host, nil
 }
 
 func getProxyInfo(config oci.RuntimeConfig) (ProxyInfo, error) {
@@ -215,14 +215,14 @@ func getProxyInfo(config oci.RuntimeConfig) (ProxyInfo, error) {
 		version = unknown
 	}
 
-	ccProxy := ProxyInfo{
+	proxy := ProxyInfo{
 		Type:    string(config.ProxyType),
 		Version: version,
 		Path:    config.ProxyConfig.Path,
 		Debug:   config.ProxyConfig.Debug,
 	}
 
-	return ccProxy, nil
+	return proxy, nil
 }
 
 func getCommandVersion(cmd string) (string, error) {
@@ -242,23 +242,23 @@ func getShimInfo(config oci.RuntimeConfig) (ShimInfo, error) {
 		version = unknown
 	}
 
-	ccShim := ShimInfo{
+	shim := ShimInfo{
 		Type:    string(config.ShimType),
 		Version: version,
 		Path:    shimPath,
 		Debug:   shimConfig.Debug,
 	}
 
-	return ccShim, nil
+	return shim, nil
 }
 
 func getAgentInfo(config oci.RuntimeConfig) AgentInfo {
-	ccAgent := AgentInfo{
+	agent := AgentInfo{
 		Type:    string(config.AgentType),
 		Version: unknown,
 	}
 
-	return ccAgent
+	return agent
 }
 
 func getHypervisorInfo(config oci.RuntimeConfig) HypervisorInfo {
@@ -280,21 +280,21 @@ func getHypervisorInfo(config oci.RuntimeConfig) HypervisorInfo {
 func getEnvInfo(configFile string, config oci.RuntimeConfig) (env EnvInfo, err error) {
 	meta := getMetaInfo()
 
-	ccRuntime := getRuntimeInfo(configFile, config)
+	runtime := getRuntimeInfo(configFile, config)
 
-	ccHost, err := getHostInfo()
+	host, err := getHostInfo()
 	if err != nil {
 		return EnvInfo{}, err
 	}
 
-	ccProxy, _ := getProxyInfo(config)
+	proxy, _ := getProxyInfo(config)
 
-	ccShim, err := getShimInfo(config)
+	shim, err := getShimInfo(config)
 	if err != nil {
 		return EnvInfo{}, err
 	}
 
-	ccAgent := getAgentInfo(config)
+	agent := getAgentInfo(config)
 
 	hypervisor := getHypervisorInfo(config)
 
@@ -309,23 +309,23 @@ func getEnvInfo(configFile string, config oci.RuntimeConfig) (env EnvInfo, err e
 
 	env = EnvInfo{
 		Meta:       meta,
-		Runtime:    ccRuntime,
+		Runtime:    runtime,
 		Hypervisor: hypervisor,
 		Image:      image,
 		Kernel:     kernel,
-		Proxy:      ccProxy,
-		Shim:       ccShim,
-		Agent:      ccAgent,
-		Host:       ccHost,
+		Proxy:      proxy,
+		Shim:       shim,
+		Agent:      agent,
+		Host:       host,
 	}
 
 	return env, nil
 }
 
-func showSettings(ccEnv EnvInfo, file *os.File) error {
+func showSettings(env EnvInfo, file *os.File) error {
 	encoder := toml.NewEncoder(file)
 
-	err := encoder.Encode(ccEnv)
+	err := encoder.Encode(env)
 	if err != nil {
 		return err
 	}
@@ -348,12 +348,12 @@ func handleSettings(file *os.File, metadata map[string]interface{}) error {
 		return errors.New("cannot determine runtime config")
 	}
 
-	ccEnv, err := getEnvInfo(configFile, runtimeConfig)
+	env, err := getEnvInfo(configFile, runtimeConfig)
 	if err != nil {
 		return err
 	}
 
-	return showSettings(ccEnv, file)
+	return showSettings(env, file)
 }
 
 var kataEnvCLICommand = cli.Command{
