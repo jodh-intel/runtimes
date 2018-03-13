@@ -199,10 +199,7 @@ DESTSYSCONFIG := $(abspath $(DESTSYSCONFDIR)/$(CONFIG_FILE))
 
 DESTSHAREDIR := $(DESTDIR)/$(SHAREDIR)
 
-SCRIPTS += $(COLLECT_SCRIPT)
 SCRIPTS_DIR := $(BINDIR)
-
-GENERATED_FILES += $(COLLECT_SCRIPT)
 
 # list of variables the user may wish to override
 USER_VARS += ARCH
@@ -459,13 +456,9 @@ check-go-static:
 coverage:
 	$(QUIET_TEST).ci/go-test.sh html-coverage
 
-install: default install-completions install-scripts
+install: default install-scripts
 	$(QUIET_INST)install -D $(TARGET) $(DESTTARGET)
 	$(QUIET_INST)install -D $(CONFIG) $(DESTCONFIG)
-
-install-completions:
-	$(QUIET_INST) test -e $(BASH_COMPLETIONS) \
-		&& install --mode 0644 -D $(BASH_COMPLETIONS) $(BASH_COMPLETIONSDIR) || true
 
 install-scripts:
 	$(foreach f,$(SCRIPTS),$(call INSTALL_EXEC,$f,$(SCRIPTS_DIR)))
