@@ -34,10 +34,10 @@ type testData struct {
 
 func init() {
 	// Ensure all log levels are logged
-	ccLog.Logger.Level = logrus.DebugLevel
+	kataLog.Logger.Level = logrus.DebugLevel
 
 	// Discard log output
-	ccLog.Logger.Out = ioutil.Discard
+	kataLog.Logger.Out = ioutil.Discard
 }
 
 func TestHandleSystemLog(t *testing.T) {

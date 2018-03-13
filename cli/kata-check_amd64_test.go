@@ -95,13 +95,13 @@ func TestCCCheckCLIFunction(t *testing.T) {
 	assert.NoError(err)
 	defer devNull.Close()
 
-	savedLogOutput := ccLog.Logger.Out
+	savedLogOutput := kataLog.Logger.Out
 
 	// discard normal output
-	ccLog.Logger.Out = devNull
+	kataLog.Logger.Out = devNull
 
 	defer func() {
-		ccLog.Logger.Out = savedLogOutput
+		kataLog.Logger.Out = savedLogOutput
 	}()
 
 	setupCheckHostIsVMContainerCapable(assert, cpuInfoFile, cpuData, moduleData)
@@ -114,7 +114,7 @@ func TestCCCheckCLIFunction(t *testing.T) {
 	buf := &bytes.Buffer{}
 
 	// capture output this time
-	ccLog.Logger.Out = buf
+	kataLog.Logger.Out = buf
 
 	fn, ok := ccCheckCLICommand.Action.(func(context *cli.Context) error)
 	assert.True(ok)
@@ -203,13 +203,13 @@ func TestCheckCheckKernelModulesNoNesting(t *testing.T) {
 	// create buffer to save logger output
 	buf := &bytes.Buffer{}
 
-	savedLogOutput := ccLog.Logger.Out
+	savedLogOutput := kataLog.Logger.Out
 
 	defer func() {
-		ccLog.Logger.Out = savedLogOutput
+		kataLog.Logger.Out = savedLogOutput
 	}()
 
-	ccLog.Logger.Out = buf
+	kataLog.Logger.Out = buf
 
 	count, err = checkKernelModules(requiredModules, archKernelParamHandler)
 
@@ -296,13 +296,13 @@ func TestCheckCheckKernelModulesNoUnrestrictedGuest(t *testing.T) {
 	// create buffer to save logger output
 	buf := &bytes.Buffer{}
 
-	savedLogOutput := ccLog.Logger.Out
+	savedLogOutput := kataLog.Logger.Out
 
 	defer func() {
-		ccLog.Logger.Out = savedLogOutput
+		kataLog.Logger.Out = savedLogOutput
 	}()
 
-	ccLog.Logger.Out = buf
+	kataLog.Logger.Out = buf
 
 	count, err = checkKernelModules(requiredModules, archKernelParamHandler)
 

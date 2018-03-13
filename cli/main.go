@@ -53,8 +53,8 @@ URL:
 
 `, projectPrefix, projectPrefix, projectURL)
 
-// ccLog is the logger used to record all messages
-var ccLog *logrus.Entry
+// kataLog is the logger used to record all messages
+var kataLog *logrus.Entry
 
 // originalLoggerLevel is the default log level. It is used to revert the
 // current log level back to its original value if debug output is not
@@ -145,7 +145,7 @@ var savedCLIVersionPrinter = cli.VersionPrinter
 var savedCLIErrWriter = cli.ErrWriter
 
 func init() {
-	ccLog = logrus.WithFields(logrus.Fields{
+	kataLog = logrus.WithFields(logrus.Fields{
 		"name":   name,
 		"source": "runtime",
 		"pid":    os.Getpid(),
@@ -157,8 +157,8 @@ func init() {
 	// log level for the runtime: once parsed the log level is set
 	// appropriately but for issues between now and completion of the
 	// config file parsing, it is prudent to operate in verbose mode.
-	originalLoggerLevel = ccLog.Logger.Level
-	ccLog.Logger.Level = logrus.DebugLevel
+	originalLoggerLevel = kataLog.Logger.Level
+	kataLog.Logger.Level = logrus.DebugLevel
 }
 
 func setupSignalHandler() {
@@ -174,7 +174,7 @@ func setupSignalHandler() {
 		nativeSignal, ok := sig.(syscall.Signal)
 		if ok {
 			if fatalSignal(nativeSignal) {
-				ccLog.WithField("signal", sig).Error("received fatal signal")
+				kataLog.WithField("signal", sig).Error("received fatal signal")
 				die()
 			}
 		}
@@ -207,23 +207,23 @@ func beforeSubcommands(context *cli.Context) error {
 		if err != nil {
 			return err
 		}
-		ccLog.Logger.Out = f
+		kataLog.Logger.Out = f
 	}
 
 	switch context.GlobalString("log-format") {
 	case "text":
 		// retain logrus's default.
 	case "json":
-		ccLog.Logger.Formatter = new(logrus.JSONFormatter)
+		kataLog.Logger.Formatter = new(logrus.JSONFormatter)
 	default:
 		return fmt.Errorf("unknown log-format %q", context.GlobalString("log-format"))
 	}
 
 	// Set virtcontainers logger.
-	vci.SetLogger(ccLog)
+	vci.SetLogger(kataLog)
 
 	// Set the OCI package logger.
-	oci.SetLogger(ccLog)
+	oci.SetLogger(kataLog)
 
 	ignoreLogging := false
 
@@ -231,7 +231,7 @@ func beforeSubcommands(context *cli.Context) error {
 	// debugging.
 	cmdName := context.Args().First()
 	if context.App.Command(cmdName) != nil {
-		ccLog = ccLog.WithField("command", cmdName)
+		kataLog = kataLog.WithField("command", cmdName)
 	}
 
 	if context.NArg() == 1 && context.Args()[0] == envCmd {
@@ -252,7 +252,7 @@ func beforeSubcommands(context *cli.Context) error {
 		"arguments": `"` + args + `"`,
 	}
 
-	ccLog.WithFields(fields).Info()
+	kataLog.WithFields(fields).Info()
 
 	// make the data accessible to the sub-commands.
 	context.App.Metadata = map[string]interface{}{
@@ -354,7 +354,7 @@ func userWantsUsage(context *cli.Context) bool {
 
 // fatal prints the error's details exits the program.
 func fatal(err error) {
-	ccLog.Error(err)
+	kataLog.Error(err)
 	fmt.Fprintln(defaultErrorFile, err)
 	exit(1)
 }
@@ -365,7 +365,7 @@ type fatalWriter struct {
 
 func (f *fatalWriter) Write(p []byte) (n int, err error) {
 	// Ensure error is logged before displaying to the user
-	ccLog.Error(string(p))
+	kataLog.Error(string(p))
 	return f.cliErrWriter.Write(p)
 }
 

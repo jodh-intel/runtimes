@@ -186,7 +186,7 @@ func setKernelParams(containerID string, runtimeConfig *oci.RuntimeConfig) error
 		strParams := vc.SerializeParams(defaultKernelParams, "=")
 		formatted := strings.Join(strParams, " ")
 
-		ccLog.WithField("default-kernel-parameters", formatted).Debug()
+		kataLog.WithField("default-kernel-parameters", formatted).Debug()
 	}
 
 	// retrieve the parameters specified in the config file
@@ -265,7 +265,7 @@ func createCgroupsFiles(containerID string, cgroupsDirPath string, cgroupsPathLi
 			"container": containerID,
 			"pid":       pid,
 		}
-		ccLog.WithFields(fields).Info("Cgroups files not created because cgroupsPath was empty")
+		kataLog.WithFields(fields).Info("Cgroups files not created because cgroupsPath was empty")
 		return nil
 	}
 

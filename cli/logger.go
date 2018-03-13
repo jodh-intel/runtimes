@@ -73,7 +73,7 @@ func handleSystemLog(network, raddr string) error {
 		return err
 	}
 
-	ccLog.Logger.Hooks.Add(hook)
+	kataLog.Logger.Hooks.Add(hook)
 
 	return nil
 }

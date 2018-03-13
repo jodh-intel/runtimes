@@ -135,13 +135,13 @@ func checkCPU(tag, cpuinfo string, attribs map[string]string) (count uint32) {
 
 		found := findAnchoredString(cpuinfo, attrib)
 		if !found {
-			ccLog.WithFields(fields).Errorf("CPU property not found")
+			kataLog.WithFields(fields).Errorf("CPU property not found")
 			count++
 			continue
 
 		}
 
-		ccLog.WithFields(fields).Infof("CPU property found")
+		kataLog.WithFields(fields).Infof("CPU property found")
 	}
 
 	return count
@@ -189,12 +189,12 @@ func checkKernelModules(modules map[string]kernelModule, handler kernelParamHand
 		}
 
 		if !haveKernelModule(module) {
-			ccLog.WithFields(fields).Error("kernel property not found")
+			kataLog.WithFields(fields).Error("kernel property not found")
 			count++
 			continue
 		}
 
-		ccLog.WithFields(fields).Infof("kernel property found")
+		kataLog.WithFields(fields).Infof("kernel property found")
 
 		for param, expected := range details.parameters {
 			path := filepath.Join(sysModuleDir, module, moduleParamDir, param)
@@ -220,11 +220,11 @@ func checkKernelModules(modules map[string]kernelModule, handler kernelParamHand
 					}
 				}
 
-				ccLog.WithFields(fields).Error(msg)
+				kataLog.WithFields(fields).Error(msg)
 				count++
 			}
 
-			ccLog.WithFields(fields).Info(kernelPropertyCorrect)
+			kataLog.WithFields(fields).Info(kernelPropertyCorrect)
 		}
 	}
 
@@ -288,7 +288,7 @@ var ccCheckCLICommand = cli.Command{
 			return err
 		}
 
-		ccLog.Info(successMessageCapable)
+		kataLog.Info(successMessageCapable)
 
 		if os.Geteuid() == 0 {
 			err = archHostCanCreateVMContainer()
@@ -296,7 +296,7 @@ var ccCheckCLICommand = cli.Command{
 				return err
 			}
 
-			ccLog.Info(successMessageCreate)
+			kataLog.Info(successMessageCreate)
 		}
 
 		return nil
