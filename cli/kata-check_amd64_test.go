@@ -116,7 +116,7 @@ func TestCCCheckCLIFunction(t *testing.T) {
 	// capture output this time
 	kataLog.Logger.Out = buf
 
-	fn, ok := ccCheckCLICommand.Action.(func(context *cli.Context) error)
+	fn, ok := kataCheckCLICommand.Action.(func(context *cli.Context) error)
 	assert.True(ok)
 
 	err = fn(ctx)
