@@ -35,7 +35,7 @@ func TestRunCliAction(t *testing.T) {
 	assert := assert.New(t)
 
 	flagSet := flag.NewFlagSet("flag", flag.ContinueOnError)
-	flagSet.Parse([]string{"cc-runtime"})
+	flagSet.Parse([]string{"runtime"})
 
 	// create a new fake context
 	ctx := cli.NewContext(&cli.App{Metadata: map[string]interface{}{}}, flagSet, nil)
