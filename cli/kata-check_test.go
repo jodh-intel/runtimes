@@ -590,7 +590,7 @@ func TestCheckCheckKernelModulesInvalidFileContents(t *testing.T) {
 	assert.Equal(count, uint32(1))
 }
 
-func TestCCCheckCLIFunctionFail(t *testing.T) {
+func TestCheckCLIFunctionFail(t *testing.T) {
 	assert := assert.New(t)
 
 	dir, err := ioutil.TempDir("", "")
@@ -612,7 +612,7 @@ func TestCCCheckCLIFunctionFail(t *testing.T) {
 	ctx := cli.NewContext(app, nil, nil)
 	app.Name = "foo"
 
-	fn, ok := ccCheckCLICommand.Action.(func(context *cli.Context) error)
+	fn, ok := kataCheckCLICommand.Action.(func(context *cli.Context) error)
 	assert.True(ok)
 
 	err = fn(ctx)
