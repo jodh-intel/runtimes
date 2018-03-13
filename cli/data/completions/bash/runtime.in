@@ -1,0 +1,148 @@
+#!/bin/bash
+#
+# Copyright (c) 2017-2018 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#---------------------------------------------------------------------
+
+#---------------------------------------------------------------------
+# Description: Bash tab completion script.
+#---------------------------------------------------------------------
+
+_runtime='@RUNTIME_NAME@'
+
+# Return a list of sub-commands
+_@PROJECT_TYPE@_get_subcmds()
+{
+    "$_runtime" --generate-bash-completion
+}
+
+# Return a list of options for the specified sub-command
+#
+# Limitation: Note that this only supports long-options.
+_@PROJECT_TYPE@_get_subcmd_options()
+{
+    local subcmd="$1"
+
+    "$_runtime" "$subcmd" --help |\
+        egrep -- "^ *--[^ ]*[ ][^ ]*" |\
+        awk '{print $1}' |\
+        tr -d \, |\
+        sort
+}
+
+# Return a list of global options
+_@PROJECT_TYPE@_get_global_options()
+{
+    _@PROJECT_TYPE@_get_subcmd_options ""
+}
+
+# Return name of subcmd already seen, or ""
+_@PROJECT_TYPE@_subcmd_seen()
+{
+    local subcmds=$(_@PROJECT_TYPE@_get_subcmds)
+    local cmd
+
+    for cmd in $subcmds; do
+        local word
+        for word in ${COMP_WORDS[@]}; do
+            [ "$cmd" = "$word" ] && echo "$cmd"
+        done
+    done
+
+    echo ""
+}
+
+# Return 0 if the specified sub-command requires the name of an
+# *existing* container, else 1.
+_@PROJECT_TYPE@_subcmd_needs_existing_container()
+{
+    local subcmd="$1"
+    local cmd
+
+    for cmd in \
+	    '@PROJECT_TYPE@-check' \
+	    '@PROJECT_TYPE@-env' \
+	    'create' \
+	    'help' \
+	    'list' \
+	    'version'; do
+        [ "$cmd" = "$subcmd" ] && return 1
+    done
+
+    return 0
+}
+
+# Returns a list of container names
+_@PROJECT_TYPE@_get_containers()
+{
+    # Commands that manipulate containers need root privileges.
+    # If the user isn't running as root, don't attempt to obtain a list
+    # as it will result in an error.
+    [ $(id -u) -eq 0 ] || return
+
+    "$_runtime" list --quiet
+}
+
+_@PROJECT_TYPE@_bash_autocomplete() {
+    COMPREPLY=()
+
+    local opts opt
+
+    local cur="${COMP_WORDS[COMP_CWORD]}"
+
+    for opt in \
+        '-h' '--help' 'help' \
+        '-v' '--version' 'version';
+    do
+        # No further completions possible for these commands
+        [ "$cur" = "$opt" ] && return 0
+    done
+
+    local subcmd_seen=$(_@PROJECT_TYPE@_subcmd_seen)
+
+    if [ -n "$subcmd_seen" ]; then
+	    _@PROJECT_TYPE@_subcmd_needs_existing_container "$subcmd_seen"
+	    local container_cmd=$?
+    
+            if [ -n "$cur" ]; then
+                    # Complete with local options and maybe container names
+                    opts=$(_@PROJECT_TYPE@_get_subcmd_options "$subcmd_seen")
+                    [ $container_cmd -eq 0 ] && opts="$opts $(_@PROJECT_TYPE@_get_containers)"
+            elif [[ "${cur}" == -* ]]; then
+                    # Complete with local options
+                    opts=$(_@PROJECT_TYPE@_get_subcmd_options "$subcmd_seen")
+            else
+                    # Potentially complete with container names
+                    [ $container_cmd -eq 0 ] && opts="$(_@PROJECT_TYPE@_get_containers)"
+            fi
+    else
+            if [ -n "$cur" ]; then
+                    # Complete with global options and subcmds
+                    opts="$opts $(_@PROJECT_TYPE@_get_global_options)"
+                    opts="$opts $(_@PROJECT_TYPE@_get_subcmds)"
+            elif [[ "${cur}" == -* ]]; then
+                    # Complete with global options
+                    opts=$(_@PROJECT_TYPE@_get_global_options)
+            else
+                    # Complete with subcmds
+                    opts=$(_@PROJECT_TYPE@_get_subcmds)
+            fi
+    fi
+
+    [ -n "$opts" ] && COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
+
+    return 0
+}
+
+complete -F _@PROJECT_TYPE@_bash_autocomplete "$_runtime"

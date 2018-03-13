@@ -1,0 +1,367 @@
+#!/bin/bash
+#
+# Copyright (c) 2017-2018 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+script_name=${0##*/}
+runtime_name="@RUNTIME_NAME@"
+runtime=$(command -v "$runtime_name" 2>/dev/null)
+issue_url="@PROJECT_BUG_URL@"
+script_version="@VERSION@ (commit @COMMIT@)"
+
+# Maximum number of errors to show for a single system component
+# (such as runtime or proxy).
+PROBLEM_LIMIT=${PROBLEM_LIMIT:-50}
+
+# List of patterns used to detect problems in logfiles.
+problem_pattern="("
+problem_pattern+="\<abort|"
+problem_pattern+="\<bug\>|"
+problem_pattern+="\<cannot\>|"
+problem_pattern+="\<catastrophic|"
+problem_pattern+="\<could not\>|"
+problem_pattern+="\<couldn\'t\>|"
+problem_pattern+="\<critical|"
+problem_pattern+="\<die\>|"
+problem_pattern+="\<died\>|"
+problem_pattern+="\<does.*not.*exist\>|"
+problem_pattern+="\<dying\>|"
+problem_pattern+="\<empty\>|"
+problem_pattern+="\<erroneous|"
+problem_pattern+="\<error|"
+problem_pattern+="\<expected\>|"
+problem_pattern+="\<fail|"
+problem_pattern+="\<fatal|"
+problem_pattern+="\<impossible\>|"
+problem_pattern+="\<impossibly\>|"
+problem_pattern+="\<incorrect|"
+problem_pattern+="\<invalid\>|"
+problem_pattern+="\<level=\"*error\"* |"
+problem_pattern+="\<level=\"*fatal\"* |"
+problem_pattern+="\<level=\"*panic\"* |"
+problem_pattern+="\<level=\"*warning\"* |"
+problem_pattern+="\<missing\>|"
+problem_pattern+="\<need\>|"
+problem_pattern+="\<no.*such.*file\>|"
+problem_pattern+="\<not.*found\>|"
+problem_pattern+="\<not.*supported\>|"
+problem_pattern+="\<too many\>|"
+problem_pattern+="\<unable\>|"
+problem_pattern+="\<unavailable\>|"
+problem_pattern+="\<unexpected|"
+problem_pattern+="\<unknown\>|"
+problem_pattern+="\<urgent|"
+problem_pattern+="\<warn\>|"
+problem_pattern+="\<warning\>|"
+problem_pattern+="\<wrong\>"
+problem_pattern+=")"
+
+# List of patterns used to exclude messages that are not problems
+problem_exclude_pattern="("
+problem_exclude_pattern+="\<launching .* with:"
+problem_exclude_pattern+=")"
+
+usage()
+{
+	cat <<EOT
+Usage: $script_name [options]
+
+Summary: Collect data about an installation of @PROJECT_NAME@.
+
+Description: Run this script as root to obtain a markdown-formatted summary
+  of the environment of the @PROJECT_NAME@ installation. The output of this script
+  can be pasted directly into a github issue at the address below:
+
+      $issue_url
+
+Options:
+
+ -h | --help | help       : show this usage summary.
+ -v | --version | version : show program version.
+
+EOT
+}
+
+version()
+{
+	cat <<EOT
+$script_name version $script_version
+EOT
+}
+
+die()
+{
+	local msg="$*"
+	echo >&2 "ERROR: $script_name: $msg"
+	exit 1
+}
+
+msg()
+{
+	local msg="$*"
+	echo "$msg"
+}
+
+heading()
+{
+	local name="$*"
+	echo -e "\n# $name\n"
+}
+
+subheading()
+{
+	local name="$*"
+	echo -e "\n## $name\n"
+}
+
+separator()
+{
+	echo -e '\n---\n'
+}
+
+have_cmd()
+{
+	local cmd="$1"
+
+	command -v "$cmd" &>/dev/null
+	local ret=$?
+
+	if [ $ret -eq 0 ]; then
+		msg "Have \`$cmd\`"
+	else
+		msg "No \`$cmd\`"
+	fi
+
+	[ $ret -eq 0 ]
+}
+
+show_quoted_text()
+{
+	local text="$*"
+
+	echo "\`\`\`"
+	echo "$text"
+	echo "\`\`\`"
+}
+
+run_cmd_and_show_quoted_output()
+{
+	local cmd="$*"
+
+	msg "Output of \"\`$cmd\`\":"
+	output=$(eval "$cmd" 2>&1)
+	show_quoted_text "$output"
+}
+
+show_runtime_configs()
+{
+	local configs config
+
+	heading "Runtime config files"
+	
+	configs=$($runtime --@PROJECT_TYPE@-show-default-config-paths)
+	if [ $? -ne 0 ]; then
+		version=$($runtime --version|tr '\n' ' ')
+		die "failed to check config files - runtime is probably too old ($version)"
+	fi
+
+	subheading "Runtime default config files"
+
+	show_quoted_text "$configs"
+
+	# add in the standard defaults for good measure "just in case"
+	configs+=" /etc/@PROJECT_TAG@/configuration.toml"
+	configs+=" /usr/share/defaults/@PROJECT_TAG@/configuration.toml"
+	configs+=" @DESTCONFIG@"
+	configs+=" @DESTSYSCONFIG@"
+
+	# create a unique list of config files
+	configs=$(echo $configs|tr ' ' '\n'|sort -u)
+
+	subheading "Runtime config file contents"
+
+	for config in $configs; do
+		if [ -e "$config" ]; then
+			run_cmd_and_show_quoted_output "cat \"$config\""
+		else
+			msg "Config file \`$config\` not found"
+		fi
+	done
+
+	separator
+}
+
+show_log_details()
+{
+	heading "Logfiles"
+
+	show_runtime_log_details
+	show_proxy_log_details
+	show_shim_log_details
+
+	separator
+}
+
+show_runtime_log_details()
+{
+	subheading "Runtime logs"
+
+	find_system_journal_problems "runtime" "@RUNTIME_NAME@" ""
+}
+
+find_system_journal_problems()
+{
+	local name="$1"
+	local program="$2"
+	local unit="$3"
+
+	# select by identifier
+	local selector="-t"
+
+	local data_source="system journal"
+
+	local problems=$(journalctl -q -o cat -a "$selector" "$program" |\
+		grep "time=" |\
+		egrep -i "$problem_pattern" |\
+		egrep -iv "$problem_exclude_pattern" |\
+		tail -n ${PROBLEM_LIMIT})
+
+	if [ -n "$problems" ]; then
+		msg "Recent $name problems found in $data_source:"
+		show_quoted_text "$problems"
+	else
+		msg "No recent $name problems found in $data_source."
+	fi
+}
+
+show_proxy_log_details()
+{
+	subheading "Proxy logs"
+
+	find_system_journal_problems "proxy" "@PROJECT_TYPE@-proxy" ""
+}
+
+show_shim_log_details()
+{
+	subheading "Shim logs"
+
+	find_system_journal_problems "shim" "@PROJECT_TYPE@-shim" ""
+}
+
+show_package_versions()
+{
+	heading "Packages"
+
+	local pattern="("
+
+	# CC 2.x runtime. This shouldn't be installed but let's check anyway
+	pattern+="cc-oci-runtime"
+
+	# core components
+	for project in @PROJECT_TYPES@
+	do
+		pattern+="|${project}-proxy"
+		pattern+="|${project}-runtime"
+		pattern+="|${project}-shim"
+	done
+
+	# assets
+	pattern+="|clear-containers-image"
+	pattern+="|linux-container"
+
+	# optimised hypervisor
+	pattern+="|qemu-lite"
+
+	# default distro hypervisor
+	pattern+="|qemu-system-x86"
+
+	pattern+=")"
+
+	if have_cmd "dpkg"; then
+		run_cmd_and_show_quoted_output "dpkg -l|egrep \"$pattern\""
+	fi
+
+	if have_cmd "rpm"; then
+		run_cmd_and_show_quoted_output "rpm -qa|egrep \"$pattern\""
+	fi
+
+	separator
+}
+
+show_container_mgr_details()
+{
+	heading "Container manager details"
+
+	if have_cmd "docker"; then
+		subheading "Docker"
+		run_cmd_and_show_quoted_output "docker version"
+		run_cmd_and_show_quoted_output "docker info"
+		run_cmd_and_show_quoted_output "systemctl show docker"
+	fi
+
+	if have_cmd "kubectl"; then
+		subheading "Kubernetes"
+		run_cmd_and_show_quoted_output "kubectl version"
+		run_cmd_and_show_quoted_output "kubectl config view"
+		run_cmd_and_show_quoted_output "systemctl show kubelet"
+
+		if have_cmd "crio"; then
+			run_cmd_and_show_quoted_output "crio --version"
+			run_cmd_and_show_quoted_output "systemctl show crio"
+		fi
+	fi
+
+	separator
+}
+
+show_meta()
+{
+	heading "Meta details"
+
+	date=$(date '+%Y-%m-%d.%H:%M:%S.%N%z')
+	msg "Running \`$script_name\` version \`$script_version\` at \`$date\`."
+
+	separator
+}
+
+show_runtime()
+{
+	msg "Runtime is \`$runtime\`."
+
+	cmd="@PROJECT_TYPE@-env"
+	heading "\`$cmd\`"
+	run_cmd_and_show_quoted_output "$runtime $cmd"
+
+	separator
+}
+
+main()
+{
+	case "$1" in
+		-h|--help|help) usage && exit 0;;
+		-v|--version|version) version && exit 0;;
+	esac
+
+	[ $(id -u) -eq 0 ] || die "Need to run as root"
+	[ -n "$runtime" ] || die "cannot find runtime '$runtime_name'"
+
+	show_meta
+	show_runtime
+	show_runtime_configs
+	show_log_details
+	show_container_mgr_details
+	show_package_versions
+}
+
+main "$@"
