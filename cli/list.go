@@ -112,7 +112,7 @@ To list containers created using a non-default value for "--root":
 			Usage: "display only container IDs",
 		},
 		cli.BoolFlag{
-			Name:  "cc-all",
+			Name:  "kata-all",
 			Usage: "display all available " + project + " information",
 		},
 	},
@@ -123,7 +123,7 @@ To list containers created using a non-default value for "--root":
 		}
 
 		file := defaultOutputFile
-		showAll := context.Bool("cc-all")
+		showAll := context.Bool("kata-all")
 
 		var fs formatState = formatIDList{}
 
