@@ -293,7 +293,7 @@ func setupConsole(consolePath, consoleSockPath string) (string, error) {
 	}
 
 	// Send the parent fd through the provided socket
-	if err := utils.SendFd(socket, console.master); err != nil {
+	if err := utils.SendFd(socket, console.master.Name(), console.master.Fd()); err != nil {
 		return "", err
 	}
 
