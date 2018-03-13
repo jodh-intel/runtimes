@@ -123,9 +123,9 @@ var runtimeCommands = []cli.Command{
 	stateCLICommand,
 	versionCLICommand,
 
-	// Clear Containers specific extensions
-	ccCheckCLICommand,
-	ccEnvCLICommand,
+	// Kata Containers specific extensions
+	kataCheckCLICommand,
+	kataEnvCLICommand,
 }
 
 // runtimeBeforeSubcommands is the function to run before command-line

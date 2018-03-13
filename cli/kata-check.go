@@ -270,7 +270,7 @@ func hostIsVMContainerCapable(details vmContainerCapableDetails) error {
 	return fmt.Errorf("ERROR: %s", failMessage)
 }
 
-var ccCheckCLICommand = cli.Command{
+var kataCheckCLICommand = cli.Command{
 	Name:  checkCmd,
 	Usage: "tests if system can run " + project,
 	Action: func(context *cli.Context) error {

@@ -173,8 +173,8 @@ func TestMain(m *testing.M) {
 	// terminating the process.
 	atexit(cover.FlushProfiles)
 
-	// If the test binary name is cc-runtime.coverage, we've are being asked to
-	// run the coverage-instrumented cc-runtime.
+	// If the test binary name is kata-runtime.coverage, we've are being asked to
+	// run the coverage-instrumented kata-runtime.
 	if path.Base(os.Args[0]) == name+".coverage" ||
 		path.Base(os.Args[0]) == name {
 		main()
@@ -563,7 +563,7 @@ func TestMainUserWantsUsage(t *testing.T) {
 
 		{[]string{""}, false},
 		{[]string{"sub-command", "--foo"}, false},
-		{[]string{"cc-check"}, false},
+		{[]string{"kata-check"}, false},
 		{[]string{"haaaalp"}, false},
 		{[]string{"wibble"}, false},
 		{[]string{"versioned"}, false},
@@ -599,7 +599,7 @@ func TestMainBeforeSubCommands(t *testing.T) {
 		{[]string{"version"}, false},
 		{[]string{"sub-command", "-h"}, false},
 		{[]string{"sub-command", "--help"}, false},
-		{[]string{"cc-check"}, false},
+		{[]string{"kata-check"}, false},
 	}
 
 	for i, d := range data {
@@ -690,8 +690,8 @@ func TestMainBeforeSubCommandsLoadConfigurationFail(t *testing.T) {
 		set.Bool("debug", true, "")
 		set.String("log", logFile, "")
 		set.String("log-format", logFormat, "")
-		set.String("cc-config", configFile, "")
-		set.Parse([]string{"cc-env"})
+		set.String("kata-config", configFile, "")
+		set.Parse([]string{"kata-env"})
 
 		ctx := cli.NewContext(app, set, nil)
 
@@ -720,7 +720,7 @@ func TestMainBeforeSubCommandsShowCCConfigPaths(t *testing.T) {
 	app := cli.NewApp()
 
 	set := flag.NewFlagSet("", 0)
-	set.Bool("cc-show-default-config-paths", true, "")
+	set.Bool("kata-show-default-config-paths", true, "")
 
 	ctx := cli.NewContext(app, set, nil)
 

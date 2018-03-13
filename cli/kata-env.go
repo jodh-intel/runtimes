@@ -356,7 +356,7 @@ func handleSettings(file *os.File, metadata map[string]interface{}) error {
 	return showSettings(ccEnv, file)
 }
 
-var ccEnvCLICommand = cli.Command{
+var kataEnvCLICommand = cli.Command{
 	Name:  envCmd,
 	Usage: "display settings",
 	Action: func(context *cli.Context) error {
