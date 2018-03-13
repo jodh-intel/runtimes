@@ -29,8 +29,8 @@ import (
 
 const (
 	defaultHypervisor = vc.QemuHypervisor
-	defaultProxy      = vc.CCProxyType
-	defaultShim       = vc.CCShimType
+	defaultProxy      = vc.KataProxyType
+	defaultShim       = vc.KataShimType
 	defaultAgent      = vc.HyperstartAgent
 )
 
@@ -42,7 +42,7 @@ const (
 //
 // The components are hypervisor, proxy, shim and agent. For example,
 //
-//   [proxy.cc]
+//   [proxy.kata]
 //
 // The currently supported types are listed below:
 const (
