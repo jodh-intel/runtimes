@@ -40,14 +40,6 @@ include $(ARCH_FILE)
 #------------------------------
 # project-specifics
 
-# build type for Clear Containers
-CC_TYPE = cc
-
-CC_PROJECT_NAME = Intel® Clear Containers
-CC_PROJECT_TAG = clear-containers
-CC_PROJECT_URL = https://github.com/clearcontainers
-CC_BUG_URL = $(CC_PROJECT_URL)/runtime/issues/new
-
 # build type for Kata Containers
 KATA_TYPE = kata
 
@@ -59,13 +51,7 @@ KATA_BUG_URL = $(KATA_PROJECT_URL)/kata-containers/issues/new
 #------------------------------
 
 # all supported project types
-PROJECT_TYPES = $(CC_TYPE) $(KATA_TYPE)
-
-# If this environment variable is set to any value,
-# enable the Clear Containers system build.
-ifneq (,$(CC_SYSTEM_BUILD))
-    system_build_type = $(CC_TYPE)
-endif
+PROJECT_TYPES = $(KATA_TYPE)
 
 # If this environment variable is set to any value,
 # enable the Kata Containers system build.
@@ -74,10 +60,6 @@ ifneq (,$(KATA_SYSTEM_BUILD))
 endif
 
 ifneq ($(SYSTEM_BUILD_TYPE),)
-    ifeq ($(SYSTEM_BUILD_TYPE),$(CC_TYPE))
-        system_build_type = $(CC_TYPE)
-    endif
-
     ifeq ($(SYSTEM_BUILD_TYPE),$(KATA_TYPE))
         system_build_type = $(KATA_TYPE)
     endif
@@ -85,15 +67,6 @@ endif
 
 # A particular project system build is either triggered by
 # specifying a special target or via an environment variable.
-cc_system_build_requested := $(foreach f,\
-    build-$(CC_TYPE)-system install-$(CC_TYPE)-system,\
-    $(findstring $(f),$(MAKECMDGOALS)))
-ifneq (,$(strip $(cc_system_build_requested)))
-    cc_system_build = yes
-else
-    cc_system_build = no
-endif
-
 kata_system_build_requested := $(foreach f,\
     build-$(KATA_TYPE)-system install-$(KATA_TYPE)-system,\
     $(findstring $(f),$(MAKECMDGOALS)))
@@ -101,10 +74,6 @@ ifneq (,$(strip $(kata_system_build_requested)))
     kata_system_build = yes
 else
     kata_system_build = no
-endif
-
-ifeq ($(cc_system_build),yes)
-    system_build_type = $(CC_TYPE)
 endif
 
 ifeq ($(kata_system_build),yes)
@@ -115,7 +84,7 @@ endif
 # use the value as the build type.
 
 ifeq ($(system_build_type),)
-    # Default built is for CC
+    # Default built is for Kata
     PROJECT_TYPE = $(KATA_TYPE)
 
     PROJECT_NAME = $(KATA_PROJECT_NAME)
@@ -123,15 +92,6 @@ ifeq ($(system_build_type),)
     PROJECT_URL = $(KATA_PROJECT_URL)
     PROJECT_BUG_URL = $(KATA_BUG_URL)
 else
-    ifeq ($(system_build_type),$(CC_TYPE))
-        PROJECT_TYPE = $(CC_TYPE)
-
-        PROJECT_NAME = $(CC_PROJECT_NAME)
-        PROJECT_TAG = $(CC_PROJECT_TAG)
-        PROJECT_URL = $(CC_PROJECT_URL)
-        PROJECT_BUG_URL = $(CC_BUG_URL)
-    endif
-
     ifeq ($(system_build_type),$(KATA_TYPE))
         PROJECT_TYPE = $(KATA_TYPE)
 
@@ -248,7 +208,6 @@ GENERATED_FILES += $(COLLECT_SCRIPT)
 USER_VARS += ARCH
 USER_VARS += BASH_COMPLETIONSDIR
 USER_VARS += BINDIR
-USER_VARS += CC_SYSTEM_BUILD
 USER_VARS += DESTCONFIG
 USER_VARS += DESTDIR
 USER_VARS += DESTSYSCONFIG
@@ -329,9 +288,6 @@ default: $(TARGET) $(CONFIG) $(HANDLE_GIT_HOOKS)
 
 build: default
 
-build-cc-system: default
-install-cc-system: install
-
 build-kata-system: default
 install-kata-system: install
 
@@ -359,7 +315,7 @@ const projectPrefix = "$(PROJECT_TYPE)"
 const systemdUnitName = "$(PROJECT_TAG).target"
 
 // original URL for this project
-const projectURL = "$(CC_PROJECT_URL)"
+const projectURL = "$(PROJECT_URL)"
 
 // commit is the git commit the runtime is compiled from.
 var commit = "$(COMMIT)"
@@ -528,7 +484,6 @@ show-usage: show-header
 	@printf "\n"
 	@printf "\tbuild               : standard build [1].\n"
 	@printf "\tdefault             : same as 'build'.\n"
-	@printf "\tbuild-$(CC_TYPE)-system     : build using standard $(CC_PROJECT_NAME) system paths.\n"
 	@printf "\tbuild-$(KATA_TYPE)-system   : build using standard $(KATA_PROJECT_NAME) system paths.\n"
 	@printf "\tcheck               : run tests.\n"
 	@printf "\tclean               : remove built files.\n"
@@ -536,7 +491,6 @@ show-usage: show-header
 	@printf "\tdefault             : same as just \"make\".\n"
 	@printf "\tgenerate-config     : create configuration file.\n"
 	@printf "\tinstall             : install files [2].\n"
-	@printf "\tinstall-$(CC_TYPE)-system   : install using standard $(CC_PROJECT_NAME) system paths.\n"
 	@printf "\tinstall-$(KATA_TYPE)-system : install using standard $(KATA_PROJECT_NAME) system paths.\n"
 	@printf "\tshow-arches         : show supported architectures (ARCH variable values).\n"
 	@printf "\tshow-summary        : show install locations.\n"
@@ -544,12 +498,10 @@ show-usage: show-header
 	@printf "  Notes:\n"
 	@printf "\n"
 	@printf "  [1] - Equivalent to:\n"
-	@printf "        - 'build-cc-system' if CC_SYSTEM_BUILD is set.\n"
 	@printf "        - 'build-kata-system' if KATA_SYSTEM_BUILD is set.\n"
 	@printf "        - 'build' for the project specified by SYSTEM_BUILD_TYPE.\n"
 	@printf "\n"
 	@printf "  [2] - Equivalent to:\n"
-	@printf "        - 'install-cc-system' if CC_SYSTEM_BUILD is set.\n"
 	@printf "        - 'install-kata-system' if KATA_SYSTEM_BUILD is set.\n"
 	@printf "        - 'install' for the project specified by SYSTEM_BUILD_TYPE.\n"
 	@printf "\n"
