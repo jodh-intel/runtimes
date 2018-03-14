@@ -56,13 +56,13 @@ func makeRuntimeConfigFileData(hypervisor, hypervisorPath, kernelPath, imagePath
 	default_memory = ` + strconv.FormatUint(uint64(defaultMemSize), 10) + `
 	disable_block_device_use =  ` + strconv.FormatBool(disableBlock) + `
 
-	[proxy.cc]
+	[proxy.kata]
 	path = "` + proxyPath + `"
 
-	[shim.cc]
+	[shim.kata]
 	path = "` + shimPath + `"
 
-	[agent.cc]
+	[agent.kata]
 
         [runtime]
 	`
@@ -142,7 +142,7 @@ func createAllRuntimeConfigFiles(dir, hypervisor string) (config testRuntimeConf
 		Mlock:                 !defaultEnableSwap,
 	}
 
-	agentConfig := vc.HyperConfig{}
+	agentConfig := vc.KataAgentConfig{}
 
 	proxyConfig := vc.ProxyConfig{
 		Path: proxyPath,
@@ -475,13 +475,13 @@ func TestMinimalRuntimeConfig(t *testing.T) {
 	runtimeMinimalConfig := `
 	# Clear Containers runtime configuration file
 
-	[proxy.cc]
+	[proxy.kata]
 	path = "` + proxyPath + `"
 
-	[shim.cc]
+	[shim.kata]
 	path = "` + shimPath + `"
 
-	[agent.cc]
+	[agent.kata]
 `
 
 	configPath := path.Join(dir, "runtime.toml")
@@ -523,7 +523,7 @@ func TestMinimalRuntimeConfig(t *testing.T) {
 		BlockDeviceDriver:     defaultBlockDeviceDriver,
 	}
 
-	expectedAgentConfig := vc.HyperConfig{}
+	expectedAgentConfig := vc.KataAgentConfig{}
 
 	expectedProxyConfig := vc.ProxyConfig{
 		Path: proxyPath,
@@ -548,7 +548,7 @@ func TestMinimalRuntimeConfig(t *testing.T) {
 	}
 
 	if reflect.DeepEqual(config, expectedConfig) == false {
-		t.Fatalf("Got %v\n expecting %v", config, expectedConfig)
+		t.Fatalf("Got %+v\n expecting %+v", config, expectedConfig)
 	}
 
 	if err := os.Remove(configPath); err != nil {
@@ -618,7 +618,7 @@ func TestNewQemuHypervisorConfig(t *testing.T) {
 
 }
 
-func TestNewCCShimConfig(t *testing.T) {
+func TestNewShimConfig(t *testing.T) {
 	dir, err := ioutil.TempDir(testDir, "shim-config-")
 	if err != nil {
 		t.Fatal(err)
@@ -633,7 +633,7 @@ func TestNewCCShimConfig(t *testing.T) {
 
 	_, err = newShimConfig(shim)
 	if err == nil {
-		t.Fatalf("Expected newCCShimConfig to fail as no paths exist")
+		t.Fatalf("Expected newShimConfig to fail as no paths exist")
 	}
 
 	err = createEmptyFile(shimPath)
@@ -643,7 +643,7 @@ func TestNewCCShimConfig(t *testing.T) {
 
 	shConfig, err := newShimConfig(shim)
 	if err != nil {
-		t.Fatalf("newCCShimConfig failed unexpectedly: %v", err)
+		t.Fatalf("newShimConfig failed unexpectedly: %v", err)
 	}
 
 	if shConfig.Path != shimPath {
@@ -996,7 +996,7 @@ func TestDefaultMachineAccelerators(t *testing.T) {
 func TestUpdateRuntimeConfiguration(t *testing.T) {
 	assert := assert.New(t)
 
-	assert.NotEqual(defaultAgent, vc.KataContainersAgent)
+	assert.NotEqual(defaultAgent, vc.HyperstartAgent)
 
 	config := oci.RuntimeConfig{}
 
