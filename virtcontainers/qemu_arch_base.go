@@ -85,6 +85,13 @@ type qemuArch interface {
 
 	// handleImagePath handles the Hypervisor Config image path
 	handleImagePath(config HypervisorConfig)
+
+	// setQEMUVersion stores the version of qemu being used
+	setQEMUVersion(major, minor int)
+
+	// getQEMUVersion returns the version of qemu previously set with
+	// setQEMUVersion().
+	getQEMUVersion() (major, minor int)
 }
 
 type qemuArchBase struct {
@@ -96,6 +103,8 @@ type qemuArchBase struct {
 	kernelParamsNonDebug  []Param
 	kernelParamsDebug     []Param
 	kernelParams          []Param
+	qemuMajorVersion      int
+	qemuMinorVersion      int
 }
 
 const (
@@ -166,15 +175,15 @@ var kernelParamsSystemdDebug = []Param{
 	{"systemd.log_level", "debug"},
 }
 
-func (q *qemuArchBase) enableNestingChecks() {
+func (q qemuArchBase) enableNestingChecks() {
 	q.nestedRun = true
 }
 
-func (q *qemuArchBase) disableNestingChecks() {
+func (q qemuArchBase) disableNestingChecks() {
 	q.nestedRun = false
 }
 
-func (q *qemuArchBase) machine() (govmmQemu.Machine, error) {
+func (q qemuArchBase) machine() (govmmQemu.Machine, error) {
 	for _, m := range q.supportedQemuMachines {
 		if m.Type == q.machineType {
 			return m, nil
@@ -184,7 +193,7 @@ func (q *qemuArchBase) machine() (govmmQemu.Machine, error) {
 	return govmmQemu.Machine{}, fmt.Errorf("unrecognised machine type: %v", q.machineType)
 }
 
-func (q *qemuArchBase) qemuPath() (string, error) {
+func (q qemuArchBase) qemuPath() (string, error) {
 	p, ok := q.qemuPaths[q.machineType]
 	if !ok {
 		return "", fmt.Errorf("Unknown machine type: %s", q.machineType)
@@ -193,7 +202,7 @@ func (q *qemuArchBase) qemuPath() (string, error) {
 	return p, nil
 }
 
-func (q *qemuArchBase) kernelParameters(debug bool) []Param {
+func (q qemuArchBase) kernelParameters(debug bool) []Param {
 	params := q.kernelParams
 
 	if debug {
@@ -205,13 +214,13 @@ func (q *qemuArchBase) kernelParameters(debug bool) []Param {
 	return params
 }
 
-func (q *qemuArchBase) capabilities() capabilities {
+func (q qemuArchBase) capabilities() capabilities {
 	var caps capabilities
 	caps.setBlockDeviceHotplugSupport()
 	return caps
 }
 
-func (q *qemuArchBase) bridges(number uint32) []Bridge {
+func (q qemuArchBase) bridges(number uint32) []Bridge {
 	var bridges []Bridge
 
 	for i := uint32(0); i < number; i++ {
@@ -225,7 +234,7 @@ func (q *qemuArchBase) bridges(number uint32) []Bridge {
 	return bridges
 }
 
-func (q *qemuArchBase) cpuTopology(vcpus, maxvcpus uint32) govmmQemu.SMP {
+func (q qemuArchBase) cpuTopology(vcpus, maxvcpus uint32) govmmQemu.SMP {
 	smp := govmmQemu.SMP{
 		CPUs:    vcpus,
 		Sockets: vcpus,
@@ -237,11 +246,11 @@ func (q *qemuArchBase) cpuTopology(vcpus, maxvcpus uint32) govmmQemu.SMP {
 	return smp
 }
 
-func (q *qemuArchBase) cpuModel() string {
+func (q qemuArchBase) cpuModel() string {
 	return defaultCPUModel
 }
 
-func (q *qemuArchBase) memoryTopology(memoryMb, hostMemoryMb uint64) govmmQemu.Memory {
+func (q qemuArchBase) memoryTopology(memoryMb, hostMemoryMb uint64) govmmQemu.Memory {
 	memMax := fmt.Sprintf("%dM", hostMemoryMb)
 	mem := fmt.Sprintf("%dM", memoryMb)
 	memory := govmmQemu.Memory{
@@ -253,7 +262,7 @@ func (q *qemuArchBase) memoryTopology(memoryMb, hostMemoryMb uint64) govmmQemu.M
 	return memory
 }
 
-func (q *qemuArchBase) append9PVolumes(devices []govmmQemu.Device, volumes []Volume) []govmmQemu.Device {
+func (q qemuArchBase) append9PVolumes(devices []govmmQemu.Device, volumes []Volume) []govmmQemu.Device {
 	// Add the shared volumes
 	for _, v := range volumes {
 		devices = q.append9PVolume(devices, v)
@@ -262,7 +271,7 @@ func (q *qemuArchBase) append9PVolumes(devices []govmmQemu.Device, volumes []Vol
 	return devices
 }
 
-func (q *qemuArchBase) appendConsole(devices []govmmQemu.Device, path string) []govmmQemu.Device {
+func (q qemuArchBase) appendConsole(devices []govmmQemu.Device, path string) []govmmQemu.Device {
 	serial := govmmQemu.SerialDevice{
 		Driver:        govmmQemu.VirtioSerial,
 		ID:            "serial0",
@@ -286,7 +295,7 @@ func (q *qemuArchBase) appendConsole(devices []govmmQemu.Device, path string) []
 	return devices
 }
 
-func (q *qemuArchBase) appendImage(devices []govmmQemu.Device, path string) ([]govmmQemu.Device, error) {
+func (q qemuArchBase) appendImage(devices []govmmQemu.Device, path string) ([]govmmQemu.Device, error) {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		return nil, err
 	}
@@ -307,7 +316,7 @@ func (q *qemuArchBase) appendImage(devices []govmmQemu.Device, path string) ([]g
 	return q.appendBlockDevice(devices, drive), nil
 }
 
-func (q *qemuArchBase) appendSCSIController(devices []govmmQemu.Device, enableIOThreads bool) ([]govmmQemu.Device, *govmmQemu.IOThread) {
+func (q qemuArchBase) appendSCSIController(devices []govmmQemu.Device, enableIOThreads bool) ([]govmmQemu.Device, *govmmQemu.IOThread) {
 	scsiController := govmmQemu.SCSIController{
 		ID:            scsiControllerID,
 		DisableModern: q.nestedRun,
@@ -331,7 +340,7 @@ func (q *qemuArchBase) appendSCSIController(devices []govmmQemu.Device, enableIO
 }
 
 // appendBridges appends to devices the given bridges
-func (q *qemuArchBase) appendBridges(devices []govmmQemu.Device, bridges []Bridge) []govmmQemu.Device {
+func (q qemuArchBase) appendBridges(devices []govmmQemu.Device, bridges []Bridge) []govmmQemu.Device {
 	for idx, b := range bridges {
 		t := govmmQemu.PCIBridge
 		if b.Type == pcieBridge {
@@ -356,7 +365,7 @@ func (q *qemuArchBase) appendBridges(devices []govmmQemu.Device, bridges []Bridg
 	return devices
 }
 
-func (q *qemuArchBase) append9PVolume(devices []govmmQemu.Device, volume Volume) []govmmQemu.Device {
+func (q qemuArchBase) append9PVolume(devices []govmmQemu.Device, volume Volume) []govmmQemu.Device {
 	if volume.MountTag == "" || volume.HostPath == "" {
 		return devices
 	}
@@ -381,7 +390,7 @@ func (q *qemuArchBase) append9PVolume(devices []govmmQemu.Device, volume Volume)
 	return devices
 }
 
-func (q *qemuArchBase) appendSocket(devices []govmmQemu.Device, socket Socket) []govmmQemu.Device {
+func (q qemuArchBase) appendSocket(devices []govmmQemu.Device, socket Socket) []govmmQemu.Device {
 	devID := socket.ID
 	if len(devID) > maxDevIDSize {
 		devID = devID[:maxDevIDSize]
@@ -418,7 +427,7 @@ func networkModelToQemuType(model NetInterworkingModel) govmmQemu.NetDeviceType 
 	}
 }
 
-func (q *qemuArchBase) appendNetwork(devices []govmmQemu.Device, endpoint Endpoint) []govmmQemu.Device {
+func (q qemuArchBase) appendNetwork(devices []govmmQemu.Device, endpoint Endpoint) []govmmQemu.Device {
 	switch ep := endpoint.(type) {
 	case *VirtualEndpoint:
 		devices = append(devices,
@@ -442,7 +451,7 @@ func (q *qemuArchBase) appendNetwork(devices []govmmQemu.Device, endpoint Endpoi
 	return devices
 }
 
-func (q *qemuArchBase) appendBlockDevice(devices []govmmQemu.Device, drive drivers.Drive) []govmmQemu.Device {
+func (q qemuArchBase) appendBlockDevice(devices []govmmQemu.Device, drive drivers.Drive) []govmmQemu.Device {
 	if drive.File == "" || drive.ID == "" || drive.Format == "" {
 		return devices
 	}
@@ -466,7 +475,7 @@ func (q *qemuArchBase) appendBlockDevice(devices []govmmQemu.Device, drive drive
 	return devices
 }
 
-func (q *qemuArchBase) appendVhostUserDevice(devices []govmmQemu.Device, vhostUserDevice api.VhostUserDevice) []govmmQemu.Device {
+func (q qemuArchBase) appendVhostUserDevice(devices []govmmQemu.Device, vhostUserDevice api.VhostUserDevice) []govmmQemu.Device {
 	qemuVhostUserDevice := govmmQemu.VhostUserDevice{}
 
 	// TODO: find a way to remove dependency of drivers package
@@ -488,7 +497,7 @@ func (q *qemuArchBase) appendVhostUserDevice(devices []govmmQemu.Device, vhostUs
 	return devices
 }
 
-func (q *qemuArchBase) appendVFIODevice(devices []govmmQemu.Device, vfioDevice drivers.VFIODevice) []govmmQemu.Device {
+func (q qemuArchBase) appendVFIODevice(devices []govmmQemu.Device, vfioDevice drivers.VFIODevice) []govmmQemu.Device {
 	if vfioDevice.BDF == "" {
 		return devices
 	}
@@ -502,10 +511,19 @@ func (q *qemuArchBase) appendVFIODevice(devices []govmmQemu.Device, vfioDevice d
 	return devices
 }
 
-func (q *qemuArchBase) handleImagePath(config HypervisorConfig) {
+func (q qemuArchBase) handleImagePath(config HypervisorConfig) {
 	if config.ImagePath != "" {
 		q.kernelParams = append(q.kernelParams, kernelRootParams...)
 		q.kernelParamsNonDebug = append(q.kernelParamsNonDebug, kernelParamsSystemdNonDebug...)
 		q.kernelParamsDebug = append(q.kernelParamsDebug, kernelParamsSystemdDebug...)
 	}
+}
+
+func (q qemuArchBase) setQEMUVersion(major, minor int) {
+	q.qemuMajorVersion = major
+	q.qemuMinorVersion = minor
+}
+
+func (q qemuArchBase) getQEMUVersion() (major, minor int) {
+	return q.qemuMajorVersion, q.qemuMinorVersion
 }

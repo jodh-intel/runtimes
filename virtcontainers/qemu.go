@@ -457,6 +457,8 @@ func (q *qemu) waitSandbox(timeout int) error {
 
 	q.qmpMonitorCh.qmp = qmp
 
+	q.arch.setQEMUVersion(ver.Major, ver.Minor)
+
 	q.Logger().WithFields(logrus.Fields{
 		"qmp-major-version": ver.Major,
 		"qmp-minor-version": ver.Minor,

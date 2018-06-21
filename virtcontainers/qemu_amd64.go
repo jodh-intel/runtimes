@@ -123,6 +123,12 @@ func (q *qemuAmd64) memoryTopology(memoryMb, hostMemoryMb uint64) govmmQemu.Memo
 }
 
 func (q *qemuAmd64) appendImage(devices []govmmQemu.Device, path string) ([]govmmQemu.Device, error) {
+
+	major, minor := q.getQEMUVersion()
+
+	// FIXME: test
+	virtLog.Infof("DEBUG: versions: major: %v, minor: %v", major, minor)
+
 	imageFile, err := os.Open(path)
 	if err != nil {
 		return nil, err
