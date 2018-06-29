@@ -171,3 +171,6 @@ path = "@SHIMPATH@"
 #     Used when the Container network interface can be bridged using
 #     macvtap.
 internetworking_model="@DEFNETWORKMODEL@"
+
+# Uncomment to enable global logging
+##global_log_path = "/a/path/filename.log"

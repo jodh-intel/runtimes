@@ -96,6 +96,7 @@ type proxy struct {
 type runtime struct {
 	Debug             bool   `toml:"enable_debug"`
 	InterNetworkModel string `toml:"internetworking_model"`
+	GlobalLogPath     string `toml:"global_log_path"`
 }
 
 type shim struct {
@@ -512,7 +513,14 @@ func loadConfiguration(configPath string, ignoreLogging bool) (resolvedConfigPat
 		}
 	}
 
+	globalLogPath := tomlConf.Runtime.GlobalLogPath
+
 	if !ignoreLogging {
+		err = handleGlobalLog(globalLogPath)
+		if err != nil {
+			return "", config, err
+		}
+
 		err = handleSystemLog("", "")
 		if err != nil {
 			return "", config, err
