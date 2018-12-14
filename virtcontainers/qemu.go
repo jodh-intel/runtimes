@@ -648,6 +648,11 @@ func (q *qemu) stopSandbox() error {
 		return err
 	}
 
+	// FIXME: stop runtime from shutting down hypervisor and don't
+	// cleanup.
+	q.Logger().Infof("DEBUG: stopSandbox: NOT CALLING QMP QUIT")
+	return nil
+
 	err = q.qmpMonitorCh.qmp.ExecuteQuit(q.qmpMonitorCh.ctx)
 	if err != nil {
 		q.Logger().WithError(err).Error("Fail to execute qmp QUIT")
